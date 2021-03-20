@@ -1,9 +1,22 @@
+if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]]; then
+    exec startx && exit
+fi
+if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty2 ]]; then
+    # export WLR_DRM_DEVICES="/dev/dri/card1:/dev/dri/card0"
+    exec dbus-run-session sway --my-next-gpu-wont-be-nvidia && exit
+fi
+if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty3 ]]; then
+    WM=i3 exec startx && exit
+fi
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
+
+neofetch
 
 # If you come from bash you might have to change your $PATH.
 export PATH=$HOME/bin:/usr/local/bin:/sbin:/usr/sbin:$HOME/.platformio/penv/bin:$HOME/.cabal/bin:$HOME/.local/bin:$PATH

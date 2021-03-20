@@ -10,3 +10,5 @@
 	autocrlf = input
 [color]
 	ui = auto
+[credential]
+	helper = store
