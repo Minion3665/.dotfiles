@@ -1,13 +1,15 @@
 if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]]; then
-    exec startx && exit
+    startx &> /dev/null
+    sudo /usr/bin/prime-switch
+    exit
 fi
-if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty2 ]]; then
-    # export WLR_DRM_DEVICES="/dev/dri/card1:/dev/dri/card0"
-    exec dbus-run-session sway --my-next-gpu-wont-be-nvidia && exit
-fi
-if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty3 ]]; then
-    WM=i3 exec startx && exit
-fi
+#if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty2 ]]; then
+#    # export WLR_DRM_DEVICES="/dev/dri/card1:/dev/dri/card0"
+#    exec dbus-run-session sway --my-next-gpu-wont-be-nvidia &> /dev/null && exit
+#fi
+#if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty3 ]]; then
+#    WM=i3 exec startx &> /dev/null && exit
+#fi
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
@@ -16,7 +18,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-neofetch
+neofetch | lolcat -f
 
 # If you come from bash you might have to change your $PATH.
 export PATH=$HOME/bin:/usr/local/bin:/sbin:/usr/sbin:$HOME/.platformio/penv/bin:$HOME/.cabal/bin:$HOME/.local/bin:$PATH
@@ -122,5 +124,23 @@ source $ZSH/oh-my-zsh.sh
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+# Load NVM
+source /usr/share/nvm/init-nvm.sh
+
+export SPICETIFY_INSTALL="/home/minion/spicetify-cli"
+export PATH="/home/minion/lxc/scripts/host:$SPICETIFY_INSTALL:$PATH"
+
+echo "$(tput setab 234)                                 $(tput sgr0)"
+echo "$(tput setab 234)                                 $(tput sgr0)"
+echo "$(tput setab   8)                                 $(tput sgr0)"
+echo "$(tput setab   8)                                 $(tput sgr0)"
+echo "$(tput setab   7)                                 $(tput sgr0)"
+echo "$(tput setab   7)                                 $(tput sgr0)"
+echo "$(tput setab 129)                                 $(tput sgr0)"
+echo "$(tput setab 129)                                 $(tput sgr0)"
+echo "$(tput setab  91)                                 $(tput sgr0)"
+echo "$(tput setab  91)                                 $(tput sgr0)"
+echo "\n"
+
+export PATH=/bedrock/cross/pin/bin:/bedrock/bin:$PATH
+

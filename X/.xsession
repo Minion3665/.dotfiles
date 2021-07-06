@@ -1,23 +1,18 @@
-# Offload GPU to optimus manager
-/usr/bin/prime-offload
+~/.screenlayout/setup-displays.sh               && {}
 
-# Set screen layout and background, must be above mouse
-/usr/local/bin/setup-displays
-picom --backend xrender -I 0.45 -O 0.5 &
-~/.fehbg &
+picom --backend glx & # --glx-fshader-win "$(cat /home/minion/.config/picom/shader.glsl)"                                              &     `# Please note: this is not picom, this is https://github.com/ibhagwan/picom/tree/next-rebase, a picom fork with both blurring & rounded corners`
+~/.fehbg                                        &
 
-# Set the mouse cursor size and theme
-xsetroot -xcf /usr/share/icons/DMZ-Black-96dpi/xcursors/left_ptr 24
-xrdb -merge ~/.Xresources &
+xrdb -merge ~/.Xresources                       && {}
+setxkbmap -layout gb                            && {}
+setxkbmap -option grab:break_actions            && {}
 
-# Start up essential toolbar items
-# optimus-manager-qt &
-/var/lib/snapd/snap/bin/chaseapp &
-
-# Enable system utilities such as the tray, the screensaver
-# and finally the window manager
-# xscreensaver -no-splash &
-trayer --monitor "primary" --height 17 --widthtype pixel --width 85 --edge top --align right --transparent true --alpha 0 --tint 0 &
-/usr/bin/gnome-keyring-daemon --start --components=pkcs11,secrets,ssh
-# deadd-notification-center &
-spotifyd
+deadd-notification-center                       &
+nm-applet                                       &
+redshift-gtk                                    &
+spotifyd                                        && {}
+keepassxc                                       &
+xautolock -time 5 -locker "/home/minion/bin/lock" -notify 30 -notifier 'notify-send --urgency=critical "About to lock" "Your system will lock in 30 seconds due to inactivity" && paplay /usr/share/sounds/freedesktop/stereo/suspend-error.oga' -corners 00-0 &
+~/bin/mouse                                     && {}
+pulseeffects --gapplication-service             &
+openrgb --startminimized --server               &

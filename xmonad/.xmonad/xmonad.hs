@@ -7,18 +7,37 @@ import System.Exit
 import XMonad
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.ManageDocks
+import XMonad.Hooks.FadeWindows
 import XMonad.Hooks.ManageHelpers
 import XMonad.Hooks.SetWMName
 import XMonad.Layout.Fullscreen
 import XMonad.Layout.NoBorders
 import XMonad.Layout.Spiral
 import XMonad.Layout.Tabbed
+import XMonad.Layout.Gaps
+import XMonad.Layout.Spacing
 import XMonad.Layout.ThreeColumns
 import XMonad.Util.Run(spawnPipe)
 import XMonad.Util.EZConfig(additionalKeys)
 import Graphics.X11.ExtraTypes.XF86
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
+import XMonad.Hooks.DynamicLog
+
+import qualified DBus as D
+import qualified DBus.Client as D
+import qualified Codec.Binary.UTF8.String as UTF8
+
+-- The active colors, used in displaying what windows are active to the title
+--  bg = background, fg = foreground
+activebg = "#312B21"
+activefg = "#78ECF2"
+-- The secondary colors, used in displaying a second monitor which is not currently focused
+--  bg = background, fg = foreground
+secondbg = "#3D3629"
+secondfg = "#FFBF00"
+-- The danger/urgent color
+danger   = "#FF5F5F"
 
 
 ------------------------------------------------------------------------
@@ -26,31 +45,36 @@ import qualified Data.Map        as M
 -- The preferred terminal program, which is used in a binding below and by
 -- certain contrib modules.
 --
-myTerminal = "alacritty"
+switchMouse = "/home/minion/bin/touchpad_switch"
+myTerminal = "roxterm"
 
 -- The command to lock the screen or show the screensaver.
-myScreensaver = "xscreensaver-command -lock"
+myScreensaver = "xautolock -locknow"
 
 -- The command to take a selective screenshot, where you select
 -- what you'd like to capture on the screen.
-mySelectScreenshot = "/usr/bin/scrot -s"
+mySelectScreenshot = "sleep 0.2 && scrot '/tmp/screenshot_%Y-%m-%d_$wx$h.png' -b -s -e 'xclip -selection clipboard -target image/png -i $f'"
 
 -- The command to take a fullscreen screenshot.
-myScreenshot = "scrot"
+myScreenshot = "scrot -b -e 'xclip -selection clipboard -target image/png -i $f'"
 
 -- The command to use as a launcher, to launch commands that don't have
 -- preset keybindings.
-myLauncher = "$(/home/minion/bin/yeganesh -x -- -nb '#000000' -nf '#FFFFFF' -sb '#7C7C7C' -sf '#CEFFAC')"
+myLauncher = "ulauncher"
+-- $(/home/minion/bin/yeganesh -x -- -nb '#000000' -nf '#FFFFFF' -sb '#7C7C7C' -sf '#CEFFAC')"
 
 -- Location of your xmobar.hs / xmobarrc
 myXmobarrc = "~/.xmonad/xmobar-single.hs"
 
+ungrab = "setxkbmap -option grab:break_actions && xdotool key XF86Ungrab"
+
+notifications = "kill -s USR1 $(pidof deadd-notification-center)"
 
 ------------------------------------------------------------------------
 -- Workspaces
 -- The default number of workspaces (virtual screens) and their names.
 --
-myWorkspaces = ["1:term","2:web","3:code","4:vm","5:media"] ++ map show [6..9]
+myWorkspaces = ["1:main","2:second","3:code","4:comms","5:media","6:edu","7:fun"] ++ map show [8..9] ++ ["0:bg"]
 
 
 ------------------------------------------------------------------------
@@ -78,7 +102,7 @@ myManageHook = composeAll
     , className =? "MPlayer"        --> doFloat
     , className =? "VirtualBox"     --> doShift "4:vm"
     , className =? "Xchat"          --> doShift "5:media"
-    , className =? "stalonetray"    --> doIgnore
+    , className =? "ulauncher"      --> doIgnore
     , isFullscreen --> (doF W.focusDown <+> doFullFloat)]
 
 
@@ -106,8 +130,8 @@ myLayout = avoidStruts (
 -- Colors and borders
 -- Currently based on the ir_black theme.
 --
-myNormalBorderColor  = "#7c7c7c"
-myFocusedBorderColor = "#ffb6b0"
+myNormalBorderColor  = "#000000"
+myFocusedBorderColor = "#000000"
 
 -- Colors for text and backgrounds of each tab when in "Tabbed" layout.
 tabConfig = defaultTheme {
@@ -126,7 +150,7 @@ xmobarTitleColor = "#FFB6B0"
 xmobarCurrentWorkspaceColor = "#CEFFAC"
 
 -- Width of the window border in pixels.
-myBorderWidth = 1
+myBorderWidth = 2
 
 
 ------------------------------------------------------------------------
@@ -152,9 +176,25 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((modMask .|. controlMask, xK_l),
      spawn myScreensaver)
 
+  -- Open the notif center.
+  , ((modMask, xK_b),
+     spawn notifications)
+
+  -- Release keyboard & pointer grabs
+  , ((modMask, xK_x),
+     spawn ungrab)
+
   -- Spawn the launcher using command specified by myLauncher.
   -- Use this to launch programs without a key binding.
   , ((modMask, xK_p),
+     spawn myLauncher)
+
+  , ((modMask, xK_slash),
+     spawn switchMouse)
+
+  -- Spawn the launcher using command specified by myLauncher.
+  -- Use this to launch programs without a key binding.
+  , ((modMask, xK_space),
      spawn myLauncher)
 
   -- Take a selective screenshot using the command specified by mySelectScreenshot.
@@ -164,6 +204,9 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   -- Take a full screenshot using the command specified by myScreenshot.
   , ((modMask .|. controlMask .|. shiftMask, xK_o),
      spawn myScreenshot)
+
+  , ((modMask, xK_z),
+     spawn "xdotool key XF86Ungrab")
 
   -- Mute volume.
   , ((0, xF86XK_AudioMute),
@@ -184,7 +227,6 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   -- Decrease volume.
   , ((modMask .|. controlMask, xK_j),
      spawn "amixer -q set Master 5%-")
-
   -- Increase volume.
   , ((modMask .|. controlMask, xK_k),
      spawn "amixer -q set Master 5%+")
@@ -205,10 +247,6 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   , ((0, 0x1008FF2C),
      spawn "eject -T")
 
-  -- Open notification center
-  , ((modMask, xK_b),
-     spawn "kill -s USR1 $(pidof deadd-notification-center)")
-
   --------------------------------------------------------------------
   -- "Standard" xmonad key bindings
   --
@@ -218,11 +256,11 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
      kill)
 
   -- Cycle through the available layout algorithms.
-  , ((modMask, xK_space),
+  , ((modMask .|. mod1Mask, xK_space),
      sendMessage NextLayout)
 
   --  Reset the layouts on the current workspace to default.
-  , ((modMask .|. shiftMask, xK_space),
+  , ((modMask .|. shiftMask .|. mod1Mask, xK_space),
      setLayout $ XMonad.layoutHook conf)
 
   -- Resize viewed windows to the correct size.
@@ -293,7 +331,7 @@ myKeys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
   -- mod-[1..9], Switch to workspace N
   -- mod-shift-[1..9], Move client to workspace N
   [((m .|. modMask, k), windows $ f i)
-      | (i, k) <- zip (XMonad.workspaces conf) [xK_1 .. xK_9]
+      | (i, k) <- zip (XMonad.workspaces conf) ([xK_1 .. xK_9] ++ [xK_0])
       , (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
   ++
 
@@ -348,27 +386,55 @@ myMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList $
 -- per-workspace layout choices.
 --
 -- By default, do nothing.
-myStartupHook = return ()
+myStartupHook = do
+        setWMName "LG3D"
+        spawn "$HOME/.config/polybar/launch.sh"
+--	spawn "/opt/cerebro.AppImage"
 
 
 ------------------------------------------------------------------------
 -- Run xmonad with all the defaults we set up.
 --
+main :: IO ()
 main = do
-  xmproc <- spawnPipe ("xmobar " ++ myXmobarrc)
-  xmonad $ defaults {
-      logHook = dynamicLogWithPP $ xmobarPP {
-            ppOutput = hPutStrLn xmproc
-          , ppTitle = xmobarColor xmobarTitleColor "" . shorten 100
-          , ppCurrent = xmobarColor xmobarCurrentWorkspaceColor ""
-          , ppSep = "   "
-      }
-      , manageHook = manageDocks <+> myManageHook
---      , startupHook = docksStartupHook <+> setWMName "LG3D"
-      , startupHook = setWMName "LG3D"
-      , handleEventHook = docksEventHook
-  }
+    dbus <- D.connectSession
+    -- Request access to the DBus name
+    D.requestName dbus (D.busName_ "org.xmonad.Log")
+        [D.nameAllowReplacement, D.nameReplaceExisting, D.nameDoNotQueue]
 
+    xmonad $ defaults {
+        logHook = dynamicLogWithPP (myLogHook dbus)
+        , manageHook = manageDocks <+> myManageHook
+--        , startupHook = docksStartupHook <+> setWMName "LG3D"
+        , startupHook = myStartupHook
+        , handleEventHook = docksEventHook
+    }
+
+-- Override the PP values as you would otherwise, adding colors etc depending
+-- on  the statusbar used
+myLogHook :: D.Client -> PP
+myLogHook dbus = def
+    { ppOutput = dbusOutput dbus
+    , ppCurrent = wrap ("%{B" ++ activebg ++ "}%{F" ++ activefg ++ "} [") "] %{F-}%{B-}"
+    , ppVisible = wrap ("%{B" ++ secondbg ++ "}%{F" ++ secondfg ++ "} <") "> %{F-}%{B-}"
+    , ppUrgent = wrap ("%{F" ++ danger ++ "} ") " %{F-}"
+    , ppHidden = wrap " " " "
+    , ppWsSep = ""
+    , ppSep = " : "
+    , ppTitle = shorten 60
+    }
+
+-- Emit a DBus signal on log updates
+dbusOutput :: D.Client -> String -> IO ()
+dbusOutput dbus str = do
+    let signal = (D.signal objectPath interfaceName memberName) {
+            D.signalBody = [D.toVariant $ UTF8.decodeString str]
+        }
+    D.emit dbus signal
+  where
+    objectPath = D.objectPath_ "/org/xmonad/Log"
+    interfaceName = D.interfaceName_ "org.xmonad.Log"
+    memberName = D.memberName_ "Update"
 
 ------------------------------------------------------------------------
 -- Combine it all together
@@ -393,7 +459,9 @@ defaults = defaultConfig {
     mouseBindings      = myMouseBindings,
 
     -- hooks, layouts
-    layoutHook         = smartBorders $ myLayout,
+    layoutHook         = gaps [(U, 20)] $
+                         spacingRaw False (Border 15 15 15 15) True (Border 10 10 10 10) True $
+                         myLayout,
     manageHook         = myManageHook,
     startupHook        = myStartupHook
 }
